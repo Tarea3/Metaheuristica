@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import tsplib95
 import matplotlib.pyplot as plt
 import random
