@@ -127,7 +127,7 @@ def ILS(ciudad):
     iterMax = 500
     for iter in range(iterMax):
         # Perturbación
-        perturbation3(s)
+        perturbation2(s)
         # Búsqueda local
         DosOpt(s)
         costo_candidato = costoTotal(s)
