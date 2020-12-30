@@ -8,10 +8,13 @@ graficar_ruta = False
 coord_x = []
 coord_y = []
 problem = tsplib95.load('instancias/st70.tsp') #para cargar instancias
-
+info = dict()
 # distancia entre la ciudad i y j
 def distancia(i, j):
-    u = i+1, j+1
+    if info['EDGE_WEIGHT_TYPE']== 'EUC_2D':
+        u = i+1, j+1
+    else:
+        u = i, j
     return problem.get_weight(*u)
 
 # Costo de la ruta
@@ -64,10 +67,155 @@ def DosOpt(ciudad):
 
         if flag == False:
             break
-
     if contar > 0: #si se enconetro una solucion mejor contar se igualaba a 1, entonces se acepta el cambio y se realiza
         ciudad[min_i + 1 : min_j + 1] = ciudad[min_i + 1 : min_j + 1][::-1] #se invierten rutas
 
+# Búsqueda local 3-opt (http://matejgazda.com/tsp-algorithms-2-opt-3-opt-in-python/)
+def TresOpt(ciudad):
+    n = len(ciudad)
+    flag = True
+    contar = 0
+    min_change=0
+    for i in range(n - 2):
+        for j in range(i + 1, n - 1):
+            for k in range ( j + 1, n - 1):
+                
+                lista_1= []
+                nuevoCosto_1 = 0 #sin cambio de nada ciudades
+                lista_1.append(nuevoCosto_1)
+                nuevoCosto_2 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[i], ciudad[k]) + distancia(ciudad[i + 1], ciudad[k + 1]))
+                lista_1.append(nuevoCosto_2)
+                nuevoCosto_3 = distancia(ciudad[j], ciudad[j + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[j], ciudad[k]) + distancia(ciudad[j + 1], ciudad[k + 1]))
+                lista_1.append(nuevoCosto_3)
+                nuevoCosto_4 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[j], ciudad[j + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[i], ciudad[j + 1]) + distancia(ciudad[i + 1], ciudad[k + 1]) + distancia(ciudad[j], ciudad[k]))
+                lista_1.append(nuevoCosto_4)
+                nuevoCosto_5 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[j], ciudad[j + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[j], ciudad[k + 1]) + distancia(ciudad[i + 1], ciudad[j + 1]) + distancia(ciudad[i], ciudad[k]))
+                lista_1.append(nuevoCosto_5)
+                nuevoCosto_6 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[j], ciudad[j + 1]) - (distancia(ciudad[i], ciudad[j]) + distancia(ciudad[i + 1], ciudad[j + 1]))
+                lista_1.append(nuevoCosto_6)
+                nuevoCosto_7 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[j], ciudad[j + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[i + 1], ciudad[k]) + distancia(ciudad[j + 1], ciudad[k + 1]) + distancia(ciudad[i], ciudad[j]))
+                lista_1.append(nuevoCosto_7)
+                nuevoCosto_8 = distancia(ciudad[i], ciudad[i + 1]) + distancia(ciudad[j], ciudad[j + 1]) + distancia(ciudad[k], ciudad[k + 1]) - (distancia(ciudad[i], ciudad[j + 1]) + distancia(ciudad[j], ciudad[k + 1]) + distancia(ciudad[i + 1], ciudad[k]))
+                lista_1.append(nuevoCosto_8)
+                # min_i, min_j, min_k = i, j, k
+                nuevoCosto=max(lista_1)
+                
+                if nuevoCosto > min_change: #si el calculo es mejor se acepta, sino no se acepta
+                    min_change = nuevoCosto
+                    min_i, min_j, min_k = i, j, k 
+                    contar += 1
+                    if contar == 1:
+                        flag = False
+    
+            if flag == False:
+                break
+
+    if contar > 0: #si se enconetro una solucion mejor contar se igualaba a 1, entonces se acepta el cambio y se realiza
+        primer_seg = ciudad[min_i + 1 : min_k + 1] 
+        segundo_seg = ciudad[min_j + 1 : min_k + 1]
+        tercer_seg = ciudad[min_i + 1 : min_j + 1]
+        #Case 2
+        if nuevoCosto_2 == nuevoCosto:
+            ciudad[min_i + 1 : min_k + 1] = reversed(primer_seg) 
+    
+        #Case 3
+        elif nuevoCosto_3 == nuevoCosto:
+            ciudad[min_j + 1 : min_k + 1] =reversed(segundo_seg)
+        #Case 4
+        elif nuevoCosto_4 == nuevoCosto :
+            ciudad[min_i + 1 : min_k + 1] = reversed(primer_seg)
+                    
+            ciudad[min_j + 1 : min_k + 1] =reversed(segundo_seg)
+        #Case 5
+        elif nuevoCosto_5 == nuevoCosto :
+            ciudad[min_i + 1 : min_k + 1] = reversed(primer_seg)
+        
+            ciudad[min_i + 1 : min_j + 1] = reversed(tercer_seg)   
+        #Case 6
+        elif nuevoCosto_6 == nuevoCosto:
+            ciudad[min_i + 1 : min_j + 1] = reversed(tercer_seg)   
+        #Case 7
+        elif nuevoCosto_7 == nuevoCosto:
+            ciudad[min_i + 1 : min_j + 1] = reversed(tercer_seg)   
+                    
+            ciudad[min_j + 1 : min_k + 1] =reversed(segundo_seg)
+        #Case 8
+        elif nuevoCosto_8 == nuevoCosto:
+            ciudad[min_i + 1 : min_j + 1] = reversed(tercer_seg)
+            
+            ciudad[min_j + 1 : min_k + 1] =reversed(segundo_seg)
+            
+            ciudad[min_i + 1 : min_k + 1] = reversed(primer_seg)
+        
+
+
+
+
+# #Búsqueda local 3-opt (http://matejgazda.com/tsp-algorithms-2-opt-3-opt-in-python/)
+# def TresOpt(ciudad):
+#     n = len(ciudad)
+#     flag = True
+#     contar = 0
+#     min_change=0
+#     for i in range(n - 2):
+#         for j in range(i + 1, n - 1):
+#             for k in range ( j + 1, n - 1):
+                
+#                 nuevoCosto_1 = 0 #sin cambio de nada ciudades
+#                 nuevoCosto_2 = distancia(ciudad[i], ciudad[k]) + distancia(ciudad[i + 1], ciudad[k + 1]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[k], ciudad[k + 1])
+#                 nuevoCosto_3 = distancia(ciudad[j], ciudad[k]) + distancia(ciudad[j + 1], ciudad[k + 1]) - distancia(ciudad[j], ciudad[j + 1]) - distancia(ciudad[k], ciudad[k + 1])
+#                 nuevoCosto_4 = distancia(ciudad[i], ciudad[j + 1]) + distancia(ciudad[i + 1], ciudad[k + 1]) + distancia(ciudad[j], ciudad[k]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[j], ciudad[j + 1]) - distancia(ciudad[k], ciudad[k + 1])
+#                 nuevoCosto_5 = distancia(ciudad[j], ciudad[k + 1]) + distancia(ciudad[i + 1], ciudad[j + 1]) + distancia(ciudad[i], ciudad[k]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[j], ciudad[j + 1]) - distancia(ciudad[k], ciudad[k + 1])
+#                 nuevoCosto_6 = distancia(ciudad[i], ciudad[j]) + distancia(ciudad[i + 1], ciudad[j + 1]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[j], ciudad[j + 1])
+#                 nuevoCosto_7 = distancia(ciudad[i + 1], ciudad[k]) + distancia(ciudad[j + 1], ciudad[k + 1]) + distancia(ciudad[i], ciudad[j]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[j], ciudad[j + 1]) - distancia(ciudad[k], ciudad[k + 1])
+#                 nuevoCosto_8 = distancia(ciudad[i], ciudad[j + 1]) + distancia(ciudad[j], ciudad[k + 1]) + distancia(ciudad[i + 1], ciudad[k]) - distancia(ciudad[i], ciudad[i + 1]) - distancia(ciudad[j], ciudad[j + 1]) - distancia(ciudad[k], ciudad[k + 1])
+                
+#                 min_i, min_j, min_k = i, j, k
+
+        
+#                 #Case 2
+#                 if nuevoCosto_2 < 0:
+#                       ciudad[min_i + 1 : min_k + 1] = ciudad[min_i + 1 : min_k + 1][::-1]
+#                       flag = False
+        
+#                 #Case 3
+#                 elif nuevoCosto_3 < 0:
+#                     ciudad[min_j + 1 : min_k + 1] = ciudad[min_j + 1 : min_k + 1][::-1]
+#                     flag = False
+#                 #Case 4
+#                 if nuevoCosto_4 < 0:
+#                     ciudad[min_i + 1 : min_k + 1] = ciudad[min_i + 1 : min_k + 1][::-1]
+                    
+#                     ciudad[min_j + 1 : min_k + 1] = ciudad[min_j + 1 : min_k + 1][::-1]
+#                     flag = False
+#                 #Case 5
+#                 elif nuevoCosto_5 < 0:
+#                     ciudad[min_i + 1 : min_k + 1] = ciudad[min_i + 1 : min_k + 1][::-1]
+        
+#                     ciudad[min_i + 1 : min_j + 1] = ciudad[min_i + 1 : min_j + 1][::-1]     
+#                     flag = False
+#                 #Case 6
+#                 elif nuevoCosto_6 < 0:
+#                     ciudad[min_i + 1 : min_j + 1] = ciudad[min_i + 1 : min_j + 1][::-1] 
+#                     flag = False
+#                 #Case 7
+#                 elif nuevoCosto_7 < 0:
+#                     ciudad[min_i + 1 : min_k + 1] = ciudad[min_i + 1 : min_k + 1][::-1]
+                    
+#                     ciudad[min_j + 1 : min_k + 1] = ciudad[min_j + 1 : min_k + 1][::-1]
+#                     flag = False
+#                 #Case 8
+#                 if nuevoCosto_8 < 0:
+#                     ciudad[min_i + 1 : min_k + 1] = ciudad[min_i + 1 : min_k + 1][::-1]
+        
+#                     ciudad[min_j + 1 : min_k + 1] = ciudad[min_j + 1 : min_k + 1][::-1]
+        
+#                     ciudad[min_i + 1 : min_j + 1] = ciudad[min_i + 1 : min_j + 1][::-1]
+#                     flag = False
+               
+#         if flag == False:
+#             break            
+        
 # perturbación: se escogen dos ciudades aleatorias y las intercambia
 def perturbation(ciudad):
     i = 0
@@ -106,14 +254,41 @@ def perturbation2(ciudad):
         i = random.randint(0, n - 1)
         j = random.randint(0, n - 1)
     ciudad[i : j] = ciudad[i : j][::-1]
+    
+def s_mixto(ciudad):
+    x= random.randint(0,1)
+    if x < 0.5:
+        DosOpt(ciudad)
+    else:
+        TresOpt(ciudad)
+        
+def per_mixto(ciudad):
+    x= random.randint(0,1)
+    if x < 0.5:
+        perturbation2(ciudad)
+    elif 0.5 < x < 0.8:
+        perturbation3(ciudad)
+    else:
+        perturbation(ciudad)
+        
+    
 
 def ILS(ciudad):
-    random.seed(1) #se define una semilla random 
+    random.seed(8) #se define una semilla random 
     inicioTiempo = time.time() #tiempo inicial
     n = len(ciudad)
+    
     # Solución inicial
-    s = vecinoMasCercano(n, 0)#random.randint(0, n))    #heuristica constructiva, solucion inicial
-    DosOpt(s)   #es la primera busqueda local (2-opt)
+    s = vecinoMasCercano(n,0)
+    for l in range(n): #aplicamos esto dado que dependiendo de que ciudad comience el resultado tambien cambia
+        s_1 = vecinoMasCercano(n,l)
+        if s_1 < s:
+            s = s_1
+
+    
+    
+    TresOpt(s)   #es la primera busqueda local (3-opt)
+    #DosOpt(s)
 
     s_mejor = s[:]
     costoMejor = costoTotal(s_mejor)
@@ -127,8 +302,15 @@ def ILS(ciudad):
     iterMax = 500
     for iter in range(iterMax):
         # Perturbación
+        #per_mixto(s)
+        perturbation3(s)
         perturbation2(s)
         # Búsqueda local
+        #s_mixto(s)
+        # DosOpt(s)
+        # DosOpt(s)
+        #DosOpt(s)
+        TresOpt(s)
         DosOpt(s)
         costo_candidato = costoTotal(s)
         # Actualizar mejor solución
@@ -191,9 +373,11 @@ def graficar(coord_x, coord_y, solucion):
 
 def main(): #para leer la instancia 
     G = problem.get_graph()
-    ciudad = [i-1 for i in list(problem.get_nodes())]
+    #ciudad = [i-1 for i in list(problem.get_nodes())]
+    numero = len(list(problem.get_nodes()))
+    ciudad = [i for i in range(numero)]
+    global info
     info = problem.as_keyword_dict()
-
     if info['EDGE_WEIGHT_TYPE'] == 'EUC_2D': # se puede graficar la ruta
         global graficar_ruta
         graficar_ruta = True
