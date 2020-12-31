@@ -7,8 +7,9 @@ from visualizar import animacion
 graficar_ruta = False
 coord_x = []
 coord_y = []
-problem = tsplib95.load('instancias/st70.tsp') #para cargar instancias
+problem = tsplib95.load('instancias/kroA100.tsp') #para cargar instancias
 info = dict()
+
 # distancia entre la ciudad i y j
 def distancia(i, j):
     if info['EDGE_WEIGHT_TYPE']== 'EUC_2D':
@@ -69,8 +70,47 @@ def DosOpt(ciudad):
             break
     if contar > 0: #si se enconetro una solucion mejor contar se igualaba a 1, entonces se acepta el cambio y se realiza
         ciudad[min_i + 1 : min_j + 1] = ciudad[min_i + 1 : min_j + 1][::-1] #se invierten rutas
+        
+        
 
+def Gain_From_Segment_Shift(x1,x2,y1,y2,z1,z2,ciudad):
+    # actual = distancia(x1, x2) + distancia(y1, y2) + distancia(z1, z2) 
+    # nueva = distancia(x1, y1) + distancia(z1, x2) + distancia(y1, z1)
+    actual = distancia(ciudad[x1], ciudad[x2]) + distancia(ciudad[y1], ciudad[y2]) + distancia(ciudad[z1], ciudad[z2]) 
+    nueva = distancia(ciudad[x1], ciudad[y2]) + distancia(ciudad[x2], ciudad[z1]) + distancia(ciudad[y1], ciudad[z2])
+    resultado = actual - nueva
+    return resultado
+#OR-opt (http://tsp-basics.blogspot.com/2017/03/or-opt.html)
+    #la diferencia de or-opt es que OR considera la distancia entre dos de los tres tipos de cambio casi adyacentes, lo que reduce hacer un tercer for mas
+def OrOpt(ciudad):
+    n = len(ciudad)
+    min_change= 0
+    for segmentLen in range(3,1,-1):
+        for i in range(n - segmentLen - 1): 
+            x1= i
+            x2= i+1
+            
+            j = i + segmentLen
+            y1 = j
+            y2= j+1
+            
+            for k in range(j+1,n-1):
+                z1= k
+                z2= k+1
+                evaluar = Gain_From_Segment_Shift(x1,x2,y1,y2,z1,z2,ciudad)
+                if evaluar > min_change:
+                    min_change = evaluar
+                    ciudad[x1 + 1 : y1 + 1] = ciudad[x1 + 1 : y1 + 1][::-1]
+            
+                    ciudad[y1 + 1 : z1 + 1] =ciudad[y1 + 1 : z1 + 1][::-1]
+            
+                    ciudad[x1+ 1 : z1 + 1] = ciudad[x1+ 1 : z1 + 1][::-1]
+                    
+                    break
+                    
+                                                                         
 # Búsqueda local 3-opt (http://matejgazda.com/tsp-algorithms-2-opt-3-opt-in-python/)
+#VERSION 2: entra el que tenga el mayor beneficio para el cambio
 def TresOpt(ciudad):
     n = len(ciudad)
     flag = True
@@ -151,7 +191,7 @@ def TresOpt(ciudad):
 
 
 
-# #Búsqueda local 3-opt (http://matejgazda.com/tsp-algorithms-2-opt-3-opt-in-python/)
+# VERSION 1: entra al cambio el primero que cumpla con la condicion
 # def TresOpt(ciudad):
 #     n = len(ciudad)
 #     flag = True
@@ -270,24 +310,34 @@ def per_mixto(ciudad):
         perturbation3(ciudad)
     else:
         perturbation(ciudad)
-        
+
+def mejor_vecino(n):
+    mejor = 9999999999
+    for l in range(n): #aplicamos esto dado que dependiendo de que ciudad comience el resultado tambien cambia
+        s_1 = vecinoMasCercano(n,l)
+        costo = costoTotal(s_1)
+        if costo < mejor:
+            mejor=costo
+            partida = s_1
+    return partida
     
 
-def ILS(ciudad):
-    random.seed(8) #se define una semilla random 
+def ILS(ciudad,semilla):
+    random.seed(semilla) #se define una semilla random 
     inicioTiempo = time.time() #tiempo inicial
     n = len(ciudad)
     
     # Solución inicial
-    s = vecinoMasCercano(n,0)
-    for l in range(n): #aplicamos esto dado que dependiendo de que ciudad comience el resultado tambien cambia
-        s_1 = vecinoMasCercano(n,l)
-        if s_1 < s:
-            s = s_1
+    s = mejor_vecino(n) #punto de partida desde mejor resultado de NN
+    #s = vecinoMasCercano(n,0)
+    # for l in range(n): #aplicamos esto dado que dependiendo de que ciudad comience el resultado tambien cambia
+    #     s_1 = vecinoMasCercano(n,l)
+    #     if s_1 < s:
+    #         s = s_1
 
-    
-    
-    TresOpt(s)   #es la primera busqueda local (3-opt)
+    DosOpt(s)
+    OrOpt(s)
+    #TresOpt(s)   #es la primera busqueda local (3-opt)
     #DosOpt(s)
 
     s_mejor = s[:]
@@ -303,15 +353,17 @@ def ILS(ciudad):
     for iter in range(iterMax):
         # Perturbación
         #per_mixto(s)
-        perturbation3(s)
         perturbation2(s)
+        #perturbation3(s)
+        #perturbation2(s)
         # Búsqueda local
         #s_mixto(s)
         # DosOpt(s)
         # DosOpt(s)
         #DosOpt(s)
-        TresOpt(s)
+        # TresOpt(s)
         DosOpt(s)
+        OrOpt(s)
         costo_candidato = costoTotal(s)
         # Actualizar mejor solución
         if costoMejor > costo_candidato:
@@ -370,6 +422,7 @@ def graficar(coord_x, coord_y, solucion):
 
     for n in range(len(coord_x)):
         plt.annotate(str(n), xy=(coord_x[n], coord_y[n] ), xytext=(coord_x[n]+0.5, coord_y[n]+1),color='red')
+        
 
 def main(): #para leer la instancia 
     G = problem.get_graph()
@@ -386,7 +439,9 @@ def main(): #para leer la instancia
             coord_x.append(x)
             coord_y.append(y)
 
-    ILS(ciudad)
+    for semilla in range(10):
+        print('------------- Semilla ', semilla,'------------')
+        ILS(ciudad,semilla)
 
 if __name__ == "__main__":
     main()
