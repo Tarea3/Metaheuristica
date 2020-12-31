@@ -7,7 +7,7 @@ from visualizar import animacion
 graficar_ruta = False
 coord_x = []
 coord_y = []
-problem = tsplib95.load('instancias/kroA100.tsp') #para cargar instancias
+problem = tsplib95.load('instancias/berlin52.tsp') #para cargar instancias
 info = dict()
 
 # distancia entre la ciudad i y j
