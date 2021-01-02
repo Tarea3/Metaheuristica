@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import random
 import time
 from visualizar import animacion
+import numpy as np
+import csv 
 
 
 fuente= open('instancias.txt','r')
@@ -15,6 +17,15 @@ global error_minimo_total
 global costo_promedio_total
 global error_promedio_total
 global tiempo_promedio_total
+total_para_tabular=[]
+promedios_lista=[]
+total_ciudades=0
+costo_optimo_total = 0
+costo_minimo_total=0
+error_minimo_total=0
+costo_promedio_total=0
+error_promedio_total=0
+tiempo_promedio_total = 0
 
 
 for instancia in lista_total:
@@ -25,7 +36,7 @@ for instancia in lista_total:
     costo_optimo = int(b[2])
     
     
-    
+    para_tabular=[]
     graficar_ruta = False
     coord_x = []
     coord_y = []
@@ -34,17 +45,11 @@ for instancia in lista_total:
     #variables a utilizar    
     tiempo_total=0
     costo_total=0
-    ejecuciones = 3
+    ejecuciones = 1
     costo_minimo = 99999999
     error_total = 0
 
-    total_ciudades=0
-    costo_optimo_total = 0
-    costo_minimo_total=0
-    error_minimo_total=0
-    costo_promedio_total=0
-    error_promedio_total=0
-    tiempo_promedio_total = 0
+    tipo_var = 0
     # distancia entre la ciudad i y j
     # def distancia(i, j):
     #     if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' or info['EDGE_WEIGHT_TYPE']== 'GEO' or info['EDGE_WEIGHT_TYPE']== 'ATT' or info['EDGE_WEIGHT_TYPE']== 'EXPLICIT':
@@ -54,10 +59,8 @@ for instancia in lista_total:
     #     return problem.get_weight(*u)
 
     def distancia(i, j):
-        u = i+tipo_var, j+tipo_var
+        u = i + tipo_var, j + tipo_var
         return problem.get_weight(*u)
-    
-        
     
     # Costo de la ruta
     def costoTotal(ciudad):
@@ -90,7 +93,7 @@ for instancia in lista_total:
             ciudad.append(siguiente)
             seleccionada[siguiente] = True
             actual = siguiente
-    
+        #ciudad.append(desde)
         return ciudad   #finalmente se retorna la lista de ciudades
     
     # Búsqueda local 2-opt
@@ -324,7 +327,20 @@ for instancia in lista_total:
         temp = ciudad[i]
         ciudad[i] = ciudad[j]
         ciudad[j] = temp
-    
+
+    def perturbation4(ciudad): #(https://github.com/cfld/simple_tsp/blob/master/simple_tsp/perturb.py)
+        n_nodos = len(ciudad)  #perturbacion muy grande, para efectos de los metodos local search utilizados no presenta buenos resultados
+        
+        cortar = 1 + np.random.choice(n_nodos - 1, 4, replace=False) 
+        cortar = np.sort(cortar)
+        
+        zero  = ciudad[:cortar[0]]
+        one   = ciudad[cortar[0]:cortar[1]]
+        two   = ciudad[cortar[1]:cortar[2]]
+        three = ciudad[cortar[2]:cortar[3]]
+        four  = ciudad[cortar[3]:]
+        new_route = np.hstack([zero, three, two, one, four])
+        return new_route
     
     def perturbation2(ciudad):
         i = 0
@@ -396,6 +412,7 @@ for instancia in lista_total:
             # Perturbación
             #per_mixto(s)
             perturbation2(s)
+            #s = perturbation4(s)
             #perturbation3(s)
             #perturbation2(s)
             # Búsqueda local
@@ -438,17 +455,18 @@ for instancia in lista_total:
         error_total = error_total + error_instancia
         global cantidad_ciudades
         cantidad_ciudades = n 
+        
  
         print("Costo  : %d" % costoMejor)
         print("Tiempo : %f" % tiempo)
         print(s_mejor)
     
+    
         if graficar_ruta:
-            lista_soluciones.append(s_mejor)
-            lista_costos.append(costoMejor)
-            ver = animacion(lista_soluciones, coord_x, coord_y, lista_costos)
-            ver.animacionRutas()
-            graficar_soluciones(lista_costosMejores)
+            # lista_soluciones.append(s_mejor)
+            # lista_costos.append(costoMejor)
+            graficar(coord_x, coord_y, s_mejor)
+            # graficar_soluciones(lista_costosMejores)
     
     def graficar_soluciones(soluciones):
         plt.plot([i for i in range(len(soluciones))], soluciones)
@@ -458,29 +476,37 @@ for instancia in lista_total:
         plt.xlim((0, len(soluciones)))
         plt.show()
     
-    def graficar(coord_x, coord_y, solucion):
+
+    def graficar(x, y, solucion):
         plt.figure(figsize = (20,20))
-        plt.scatter(coord_x, coord_y, color = 'blue')
+        plt.scatter(x, y, color = 'green')
         s = []
-        for n in range(len(coord_x)):
+        for n in range(len(x)):
             s_temp = []
-            s_temp.append("%.1f" % coord_x[n])
-            s_temp.append("%.1f" % coord_y[n])
+            s_temp.append("%.1f" % x[n])
+            s_temp.append("%.1f" % y[n])
             s.append(s_temp)
     
             plt.xlabel("Distancia X")
             plt.ylabel("Distancia Y")
             plt.title("Ubicacion de las ciudades - TSP")
+            
+        for f in range(len(solucion)):
+            plt.annotate(str(f), xy=(x[f],y[f]),xytext = (x[f]-2.5, y[f]-7),color= 'blue')
+        for n in range (len(solucion)-1):
+            plt.plot([x[solucion[n]],x[solucion[n+1]]],[y[solucion[n]],y[solucion[n+1]]],color = 'purple')
+            
+        plt.plot([x[solucion[-1]],x[solucion[0]]],[y[solucion[-1]],y[solucion[0]]],color = 'purple')
     
-        ruta = list(solucion)
-        if len(ruta) != 0:
-            for i in range(len(ruta))[:-1]:
-                plt.plot([coord_x[ruta[i]], coord_x[ruta[i+1]]],[coord_y[ruta[i]], coord_y[ruta[i+1]]], color='b', alpha=0.4, zorder=0)
-                plt.scatter(x = coord_x, y = coord_y, color='blue', zorder=1)
-            plt.plot([coord_x[ruta[-1]], coord_x[ruta[0]]],[coord_y[ruta[-1]], coord_y[ruta[0]]], color='b', alpha=0.4, zorder=0)
+        # ruta = list(solucion)
+        # if len(ruta) != 0:
+        #     for i in range(len(ruta))[:-1]:
+        #         plt.plot([coord_x[ruta[i]], coord_x[ruta[i+1]]],[coord_y[ruta[i]], coord_y[ruta[i+1]]], color='b', alpha=0.4, zorder=0)
+        #         plt.scatter(x = coord_x, y = coord_y, color='blue', zorder=1)
+        #     plt.plot([coord_x[ruta[-1]], coord_x[ruta[0]]],[coord_y[ruta[-1]], coord_y[ruta[0]]], color='b', alpha=0.4, zorder=0)
     
-        for n in range(len(coord_x)):
-            plt.annotate(str(n), xy=(coord_x[n], coord_y[n] ), xytext=(coord_x[n]+0.5, coord_y[n]+1),color='red')
+        # for n in range(len(coord_x)):
+        #     plt.annotate(str(n), xy=(coord_x[n], coord_y[n] ), xytext=(coord_x[n]+0.5, coord_y[n]+1),color='red')
             
     
     def main(): #para leer la instancia 
@@ -489,16 +515,27 @@ for instancia in lista_total:
         numero = len(list(problem.get_nodes()))
         ciudad = [i for i in range(numero)]
         global info
-        info = problem.as_keyword_dict()
-        if info['EDGE_WEIGHT_TYPE'] == 'EUC_2D': # se puede graficar la ruta
+        info = problem.as_keyword_dict() 
+        # print('-------------------------------------------------------------------')
+        # print(info)
+        # print('-------------------------------------------------------------------')
+        if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' : # se puede graficar la ruta
             global graficar_ruta
             graficar_ruta = True
+            
             for i in range(1, len(ciudad) + 1):
                 x, y = info['NODE_COORD_SECTION'][i]
                 coord_x.append(x)
                 coord_y.append(y)
+                
         global tipo_var
-        if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' or info['EDGE_WEIGHT_TYPE']== 'GEO' or info['EDGE_WEIGHT_TYPE']== 'ATT' or info['EDGE_WEIGHT_TYPE']== 'EXPLICIT':
+        if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' or info['EDGE_WEIGHT_TYPE']== 'GEO' or info['EDGE_WEIGHT_TYPE']== 'ATT': #or info['EDGE_WEIGHT_TYPE']== 'EXPLICIT' and info['DISPLAY_DATA_TYPE'] != 'TWOD_DISPLAY'
+            tipo_var = 1
+        elif info['NAME'] == 'dantzig42' or info['NAME'] == 'gr120':
+            tipo_var = 1
+        elif info['NAME'] == 'gr17' or info['NAME'] == 'gr21' or info['NAME'] == 'gr24' or info['NAME'] == 'swiss42' or info['NAME'] == 'gr48' or info['NAME'] == 'fri26' or info['NAME'] == 'brazil58':
+            tipo_var = 0
+        elif info['EDGE_WEIGHT_TYPE']== 'EXPLICIT' and info['EDGE_WEIGHT_FORMAT'] != 'LOWER_DIAG_ROW' and info['EDGE_WEIGHT_FORMAT'] != 'FULL_MATRIX ':
             tipo_var = 1
         else:
             tipo_var = 0   
@@ -513,76 +550,110 @@ for instancia in lista_total:
 #PARTES O DATOS SOLICITADOS
 #1 : ID INSTANCIA
     print('ID: ', id_instancia)
+    para_tabular.append(id_instancia)
         
 #2 : NOMBRE INSTANCIA 
     print('Nombre: ',nombre_instancia)
+    para_tabular.append(nombre_instancia)
         
 #3 : NUMERO DE VERTICES INSTANCIA
     print('N° Vertices: ',cantidad_ciudades)
+    para_tabular.append(round(cantidad_ciudades,2))
     total_ciudades= total_ciudades + cantidad_ciudades
         
 #4 :  NUMERO DE ARISTAS INSTANCIA
+    para_tabular.append('NULL')
         
 #5 : COSTOS OPTIMOS INSTANCIA
     print('Costo optimo: ',costo_optimo)
+    para_tabular.append(round(costo_optimo,2))
     costo_optimo_total = costo_optimo_total + costo_optimo
         
 #6 : COSTO MINIMO DE LAS 10 INSTANCIAS
     print('Costo mínimo de ejecuciones: ',costo_minimo) 
+    para_tabular.append(round(costo_minimo,2))
     costo_minimo_total = costo_minimo_total + costo_minimo
         
 #7 : ERROR RELATIVO MINIMO
     error_minimo = ((costo_minimo - costo_optimo)/costo_optimo) * 100
     print('ERM: ',error_minimo) 
+    para_tabular.append(round(error_minimo,2))
     error_minimo_total = error_minimo_total + error_minimo
         
 #8 : COSTO PROMEDIO 10 EJECUCIONES
     costo_promedio = (costo_total) / ejecuciones
     print('Costo promedio ejecuciones:', costo_promedio)
+    para_tabular.append(round(costo_promedio,2))
     costo_promedio_total = costo_promedio_total + costo_promedio
         
 #9 : ERROR RELATIVO PROMEDIO 10 EJECUCIONES
     error_promedio = error_total / ejecuciones
     print('ERP: ',error_promedio)
+    para_tabular.append(round(error_promedio,2))
     error_promedio_total = error_promedio_total + error_promedio
 #10 : TIEMPO PROMEDIO EJECUCIONES
     tiempo_promedio = (tiempo_total)/ejecuciones
     print('Tiempo promedio de ejecución:', tiempo_promedio)
+    para_tabular.append(round(tiempo_promedio,2))
     tiempo_promedio_total = tiempo_promedio_total + tiempo_promedio
+    
+    total_para_tabular.append(para_tabular)
  
     
 #GENERAL
 print("\n")
 print("\n")
 print("------------- GENERAL-------------")
+promedios_lista.append('')
+promedios_lista.append('promedio')
         
 #3 : NUMERO DE VERTICES INSTANCIA
 total_ciudades_promedio= total_ciudades/40
+promedios_lista.append(round(total_ciudades_promedio,2))
 print('Promedio n° Vertices: ',total_ciudades_promedio)
 
         
 #4 :  NUMERO DE ARISTAS INSTANCIA
+promedios_lista.append('NULL')
         
 #5 : COSTOS OPTIMOS INSTANCIA
 costo_optimo_total_promedio = costo_optimo_total/40
+promedios_lista.append(round(costo_optimo_total_promedio,2))
 print('Costo optimo promedio: ',costo_optimo_total_promedio)
         
 #6 : COSTO MINIMO DE LAS 10 INSTANCIAS
 costo_minimo_total_promedio = costo_minimo_total/40
+promedios_lista.append(round(costo_minimo_total_promedio,2))
 print('Costo mínimo promedio de ejecuciones: ',costo_minimo_total_promedio) 
         
 #7 : ERROR RELATIVO MINIMO
 error_minimo_total_promedio = error_minimo_total/40
+promedios_lista.append(round(error_minimo_total_promedio,2))
 print('ERM promedio: ',error_minimo_total_promedio)
         
 #8 : COSTO PROMEDIO 10 EJECUCIONES
 costo_promedio_total_promedio = costo_promedio_total/40
+promedios_lista.append(round(costo_promedio_total_promedio,2))
 print('Costo promedio ejecuciones:', costo_promedio_total_promedio)
         
 #9 : ERROR RELATIVO PROMEDIO 10 EJECUCIONES
 error_promedio_total_promedio = error_promedio_total / 40
+promedios_lista.append(round(error_promedio_total_promedio,2))
 print('ERP promedio: ',error_promedio_total_promedio)
         
 #10 : TIEMPO PROMEDIO EJECUCIONES
 tiempo_promedio_total_promedio = tiempo_promedio_total/40
+promedios_lista.append(round(tiempo_promedio_total_promedio,2))
 print('Tiempo promedio de ejecución:', tiempo_promedio_total_promedio)
+
+
+
+titulos=['#','instancia','|V|','|A|','costo óptimo','mínimo','ERP','promedio','ERM','tiempo']
+
+
+with open('ils.csv','w') as new_file:
+    write= csv.writer(new_file,delimiter ='\t')
+    
+    write.writerow(titulos)
+    write.writerows(total_para_tabular)
+    write.writerow(promedios_lista)
