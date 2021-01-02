@@ -16,6 +16,7 @@ global costo_promedio_total
 global error_promedio_total
 global tiempo_promedio_total
 
+
 for instancia in lista_total:
     
     b = instancia.split()
@@ -33,7 +34,7 @@ for instancia in lista_total:
     #variables a utilizar    
     tiempo_total=0
     costo_total=0
-    ejecuciones = 1
+    ejecuciones = 3
     costo_minimo = 99999999
     error_total = 0
 
@@ -44,14 +45,19 @@ for instancia in lista_total:
     costo_promedio_total=0
     error_promedio_total=0
     tiempo_promedio_total = 0
-    
     # distancia entre la ciudad i y j
+    # def distancia(i, j):
+    #     if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' or info['EDGE_WEIGHT_TYPE']== 'GEO' or info['EDGE_WEIGHT_TYPE']== 'ATT' or info['EDGE_WEIGHT_TYPE']== 'EXPLICIT':
+    #         u = i+1, j+1
+    #     else:
+    #         u = i, j
+    #     return problem.get_weight(*u)
+
     def distancia(i, j):
-        if info['EDGE_WEIGHT_TYPE']== 'EUC_2D':
-            u = i+1, j+1
-        else:
-            u = i, j
+        u = i+tipo_var, j+tipo_var
         return problem.get_weight(*u)
+    
+        
     
     # Costo de la ruta
     def costoTotal(ciudad):
@@ -364,6 +370,7 @@ for instancia in lista_total:
         # Solución inicial
         s = mejor_vecino(n) #punto de partida desde mejor resultado de NN
 
+
         #s = vecinoMasCercano(n,0)
         # for l in range(n): #aplicamos esto dado que dependiendo de que ciudad comience el resultado tambien cambia
         #     s_1 = vecinoMasCercano(n,l)
@@ -413,6 +420,8 @@ for instancia in lista_total:
             # criterio de aceptación de la solución actual
             if abs(costoMejor - costo_candidato) / costoMejor > 0.05:
                 s = s_mejor[:]
+            if costo_optimo == costoMejor: #si encuentra el optimo lo saca del ciclo
+                break
     
         finTiempo = time.time()
         tiempo = finTiempo - inicioTiempo
@@ -488,6 +497,11 @@ for instancia in lista_total:
                 x, y = info['NODE_COORD_SECTION'][i]
                 coord_x.append(x)
                 coord_y.append(y)
+        global tipo_var
+        if info['EDGE_WEIGHT_TYPE']== 'EUC_2D' or info['EDGE_WEIGHT_TYPE']== 'GEO' or info['EDGE_WEIGHT_TYPE']== 'ATT' or info['EDGE_WEIGHT_TYPE']== 'EXPLICIT':
+            tipo_var = 1
+        else:
+            tipo_var = 0   
     
         for semilla in range(ejecuciones):
             print('------------- Semilla ', semilla,'------------')
